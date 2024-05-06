@@ -1,45 +1,27 @@
 const express = require("express");
-const { graphqlHTTP } = require("express-graphql");
-const { buildSchema } = require("graphql");
+const typeDefs = require("./schema/schema");
+const resolvers = require("./resolver/resolver");
+const { ApolloServer } = require("apollo-server-express");
 
 const app = express();
 
-// Use Express's built-in middleware to parse JSON
 app.use(express.json());
 
 const port = 8080;
 
-// Use POST (and optionally GET) for the GraphQL endpoint
-app.use(
-  "/graphql",
-  graphqlHTTP({
-    schema: buildSchema(`
-      type RootQuery {
-          events: [String!]!
-      }
-
-      type RootMutation {
-          createEvent(name: String): String
-      }
-
-      schema {
-          query: RootQuery 
-          mutation: RootMutation
-      }
-    `),
-    rootValue: {
-      events: () => {
-        return ["Romantic", "Cooking", "Sailing"];
-      },
-      createEvent: (args) => {
-        const eventName = args.name;
-        return eventName;
-      },
-    },
-    graphiql: true, // Enables the GraphiQL IDE for easy testing
-  })
-);
-
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
+const server = new ApolloServer({
+  typeDefs,
+  resolvers,
 });
+
+// Create an async function to start the server
+async function startServer() {
+  await server.start(); // Start the Apollo Server
+  server.applyMiddleware({ app }); // Apply the middleware to the Express application
+
+  app.listen(port, () => {
+    console.log(`Server running on http://localhost:${port}`);
+  });
+}
+
+startServer(); // Call the async function to start everything
